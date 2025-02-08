@@ -7,11 +7,22 @@ using RoomOptions = LiveKit.RoomOptions;
 using System.Collections.Generic;
 using Application = UnityEngine.Application;
 using TMPro;
+using System;
+using UnityEngine.Networking;
+
+
+[System.Serializable]
+public class TokenResponse
+{
+    public string participantToken;
+}
 
 public class LivekitSamples : MonoBehaviour
 {
     public string url = "ws://localhost:7880";
-    public string token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MTkyODQ5NzgsImlzcyI6IkFQSXJramtRYVZRSjVERSIsIm5hbWUiOiJ1bml0eSIsIm5iZiI6MTcxNzQ4NDk3OCwic3ViIjoidW5pdHkiLCJ2aWRlbyI6eyJjYW5VcGRhdGVPd25NZXRhZGF0YSI6dHJ1ZSwicm9vbSI6ImxpdmUiLCJyb29tSm9pbiI6dHJ1ZX19.WHt9VItlQj0qaKEB_EIxyFf2UwlqdEdWIiuA_tM0QmI";
+    public string tokenServerUrl = "https://cloud-api.livekit.io/api/sandbox/connection-details";
+    public string roomName = "testRoom";
+    private string token = "";
 
     private Room room = null;
 
@@ -25,18 +36,14 @@ public class LivekitSamples : MonoBehaviour
     List<RtcAudioSource> _rtcAudioSources = new();
     List<VideoStream> _videoStreams = new();
 
-    public GridLayoutGroup layoutGroup; //Component
+    public GridLayoutGroup layoutGroup;
 
     public TMP_Text statusText;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-    }
 
-    // Update is called once per frame
-    void Update()
+    public void Start()
     {
+        StartCoroutine(MakeCall());
     }
 
     public void UpdateStatusText(string newText)
@@ -46,48 +53,13 @@ public class LivekitSamples : MonoBehaviour
             statusText.text = newText;
         }
     }
-
-    public void OnClickPublishAudio()
-    {
-        StartCoroutine(publishMicrophone());
-        Debug.Log("OnClickPublishAudio clicked!");
-    }
-
-    public void OnClickPublishVideo()
-    {
-        StartCoroutine(publishVideo());
-        Debug.Log("OnClickPublishVideo clicked!");
-    }
-
-    public void onClickPublishData()
-    {
-        publishData();
-        Debug.Log("onClickPublishData clicked!");
-    }
-
-    public void onClickMakeCall()
-    {
-        Debug.Log("onClickMakeCall clicked!");
-        if(webCamTexture == null)
-        {
-            StartCoroutine(OpenCamera());
-        }
-        
-        StartCoroutine(MakeCall());
-    }
-
-    public void onClickHangup()
-    {
-        Debug.Log("onClickHangup clicked!");
-        room.Disconnect();
-        CleanUp();
-        room = null;
-        UpdateStatusText("Disconnected");
-    }
-
     IEnumerator MakeCall()
     {
-        if(room == null)
+        yield return RetrieveToken();
+
+        yield return OpenCamera();
+
+        if (room == null)
         {
             room = new Room();
             room.TrackSubscribed += TrackSubscribed;
@@ -101,13 +73,40 @@ public class LivekitSamples : MonoBehaviour
                 Debug.Log("Connected to " + room.Name);
                 UpdateStatusText("Connected");
             }
+            else
+            {
+                Debug.Log("Failed to connect!");
+            }
         }
-        
+
+        yield return publishMicrophone();
+        yield return publishVideo();
+
+    }
+
+    IEnumerator RetrieveToken()
+    {
+        using (UnityWebRequest www = UnityWebRequest.PostWwwForm($"{tokenServerUrl}?roomName={roomName}", "{}"))
+        {
+            www.SetRequestHeader("X-Sandbox-ID", "nano-vault-22bmk6");
+            yield return www.SendWebRequest();
+
+            if (www.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError(www.error);
+            }
+            else
+            {
+                Debug.Log("Form upload complete!");
+                var jsonResponse = www.downloadHandler.text;
+                token = JsonUtility.FromJson<TokenResponse>(jsonResponse).participantToken;
+            }
+        }
     }
 
     void CleanUp()
     {
-        foreach(var item in _audioObjects)
+        foreach (var item in _audioObjects)
         {
             var source = item.Value.GetComponent<AudioSource>();
             source.Stop();
@@ -115,7 +114,7 @@ public class LivekitSamples : MonoBehaviour
         }
 
         _audioObjects.Clear();
-        
+
         foreach (var item in _rtcAudioSources)
         {
             item.Stop();
@@ -160,7 +159,7 @@ public class LivekitSamples : MonoBehaviour
 
         RectTransform trans = imgObject.AddComponent<RectTransform>();
         trans.localScale = Vector3.one;
-        trans.sizeDelta = new Vector2(180, 120);
+        trans.sizeDelta = new Vector2(250, 250);
         trans.rotation = Quaternion.AngleAxis(Mathf.Lerp(0f, 180f, 50), Vector3.forward);
 
         RawImage image = imgObject.AddComponent<RawImage>();
@@ -168,12 +167,12 @@ public class LivekitSamples : MonoBehaviour
         var stream = new VideoStream(videoTrack);
         stream.TextureReceived += (tex) =>
         {
-            if(image != null)
+            if (image != null)
             {
                 image.texture = tex;
             }
         };
-     
+
         _videoObjects[videoTrack.Sid] = imgObject;
 
         imgObject.transform.SetParent(layoutGroup.gameObject.transform, false);
@@ -194,7 +193,6 @@ public class LivekitSamples : MonoBehaviour
             var source = audObject.AddComponent<AudioSource>();
             var stream = new AudioStream(audioTrack, source);
             _audioObjects[audioTrack.Sid] = audObject;
-            _rtcAudioSources.Add(stream.AudioSource);
         }
     }
 
@@ -203,7 +201,7 @@ public class LivekitSamples : MonoBehaviour
         if (track is RemoteVideoTrack videoTrack)
         {
             var imgObject = _videoObjects[videoTrack.Sid];
-            if(imgObject != null)
+            if (imgObject != null)
             {
                 Destroy(imgObject);
             }
@@ -236,8 +234,11 @@ public class LivekitSamples : MonoBehaviour
         var localSid = "my-audio-source";
         GameObject audObject = new GameObject(localSid);
         _audioObjects[localSid] = audObject;
-        var rtcSource = new MicrophoneSource(audObject.AddComponent<AudioSource>());
-        rtcSource.Configure(Microphone.devices[0], true, 2, (int)RtcAudioSource.DefaultMirophoneSampleRate);
+        var source = audObject.AddComponent<AudioSource>();
+        source.clip = Microphone.Start(Microphone.devices[0], true, 2, (int)RtcAudioSource.DefaultSampleRate);
+        source.loop = true;
+
+        var rtcSource = new RtcAudioSource(source, RtcAudioSourceType.AudioSourceMicrophone);
         Debug.Log($"CreateAudioTrack");
         var track = LocalAudioTrack.CreateAudioTrack("my-audio-track", rtcSource, room);
 
@@ -254,34 +255,24 @@ public class LivekitSamples : MonoBehaviour
         {
             Debug.Log("Track published!");
         }
-        
+
         _rtcAudioSources.Add(rtcSource);
-        yield return rtcSource.PrepareAndStart();
+        rtcSource.Start();
     }
 
     public IEnumerator publishVideo()
     {
-        //var rt = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
-        //rt.Create();
-        //var source = new TextureVideoSource(rt);
-
-        var source = new WebCameraSource(webCamTexture);
-
-        //var source = new ScreenVideoSource();
-
-        //Camera.main.enabled = true;
-        //var source = new CameraVideoSource(Camera.main);
+        var source = new TextureVideoSource(webCamTexture);
 
         GameObject imgObject = new GameObject("camera");
         RectTransform trans = imgObject.AddComponent<RectTransform>();
         trans.localScale = Vector3.one;
-        trans.sizeDelta = new Vector2(180, 120);
+        trans.sizeDelta = new Vector2(250, 250);
         RawImage image = imgObject.AddComponent<RawImage>();
-        source.TextureReceived += (txt) => {
-            image.texture = txt;
-        };
+
+        image.texture = webCamTexture;
+
         imgObject.transform.SetParent(layoutGroup.gameObject.transform, false);
-        //var source = new TextureVideoSource(webCamTexture);
         var track = LocalVideoTrack.CreateVideoTrack("my-video-track", source, room);
 
         var options = new TrackPublishOptions();
@@ -306,11 +297,6 @@ public class LivekitSamples : MonoBehaviour
         _rtcVideoSources.Add(source);
     }
 
-    public void publishData()
-    {
-        var str = "hello from unity!";
-        room.LocalParticipant.PublishData(System.Text.Encoding.Default.GetBytes(str));
-    }
 
     public IEnumerator OpenCamera()
     {
@@ -346,15 +332,6 @@ public class LivekitSamples : MonoBehaviour
                 {
                     wrapMode = TextureWrapMode.Repeat
                 };
-                /*
-                GameObject imgObject = new GameObject("camera");
-                RectTransform trans = imgObject.AddComponent<RectTransform>();
-                trans.localScale = Vector3.one;
-                trans.sizeDelta = new Vector2(180, 120);
-                RawImage image = imgObject.AddComponent<RawImage>();
-                image.texture = webCamTexture;
-                imgObject.transform.SetParent(layoutGroup.gameObject.transform, false);
-                */
 
                 webCamTexture.Play();
             }
