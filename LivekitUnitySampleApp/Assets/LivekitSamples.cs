@@ -238,26 +238,27 @@ public class LivekitSamples : MonoBehaviour
         source.clip = Microphone.Start(Microphone.devices[0], true, 2, (int)RtcAudioSource.DefaultSampleRate);
         source.loop = true;
 
-        var rtcSource = new RtcAudioSource(source, RtcAudioSourceType.AudioSourceMicrophone);
+        //var rtcSource = new RtcAudioSource(source);
         Debug.Log($"CreateAudioTrack");
-        var track = LocalAudioTrack.CreateAudioTrack("my-audio-track", rtcSource, room);
+        //var track = LocalAudioTrack.CreateAudioTrack("my-audio-track", rtcSource, room);
 
-        var options = new TrackPublishOptions();
-        options.AudioEncoding = new AudioEncoding();
-        options.AudioEncoding.MaxBitrate = 64000;
-        options.Source = TrackSource.SourceMicrophone;
+        //var options = new TrackPublishOptions();
+        //options.AudioEncoding = new AudioEncoding();
+        //options.AudioEncoding.MaxBitrate = 64000;
+        //options.Source = TrackSource.SourceMicrophone;
 
-        Debug.Log("PublishTrack!");
-        var publish = room.LocalParticipant.PublishTrack(track, options);
-        yield return publish;
+        //Debug.Log("PublishTrack!");
+        //var publish = room.LocalParticipant.PublishTrack(track, options);
+        //yield return publish;
 
-        if (!publish.IsError)
-        {
-            Debug.Log("Track published!");
-        }
+        //if (!publish.IsError)
+        //{
+        //    Debug.Log("Track published!");
+        //}
 
-        _rtcAudioSources.Add(rtcSource);
-        rtcSource.Start();
+        //_rtcAudioSources.Add(rtcSource);
+        //rtcSource.Start();
+        yield return new WaitForEndOfFrame();
     }
 
     public IEnumerator publishVideo()

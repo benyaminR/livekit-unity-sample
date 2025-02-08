@@ -862,7 +862,7 @@ MonoBehaviour:
   m_ChildAlignment: 0
   m_StartCorner: 0
   m_StartAxis: 0
-  m_CellSize: {x: 180, y: 120}
+  m_CellSize: {x: 250, y: 250}
   m_Spacing: {x: 0, y: 0}
   m_Constraint: 0
   m_ConstraintCount: 2
@@ -1214,7 +1214,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   url: wss://savvy-dev-v91xnq0w.livekit.cloud
-  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MzkwMDkzNTcsImlzcyI6IkFQSWpKajNXaE11VlBaaCIsIm5iZiI6MTczOTAwODQ1Nywic3ViIjoic21hcnQtc2VtYXBob3JlIiwidmlkZW8iOnsiY2FuVXBkYXRlT3duTWV0YWRhdGEiOnRydWUsInJvb20iOiJ0ZXN0Um9vbSIsInJvb21Kb2luIjp0cnVlLCJyb29tTGlzdCI6dHJ1ZX19.zIbcoE8JVjyoT2rHnztq94rI0T0Mkb5LdP75r2lYffY
+  tokenServerUrl: https://cloud-api.livekit.io/api/sandbox/connection-details
+  roomName: testRoom
   layoutGroup: {fileID: 1628845265}
   statusText: {fileID: 1217850180}
 --- !u!1 &1628845263

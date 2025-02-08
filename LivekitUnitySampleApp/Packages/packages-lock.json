@@ -236,11 +236,10 @@
       "url": "https://packages.unity.com"
     },
     "io.livekit.livekit-sdk": {
-      "version": "1.0.1",
+      "version": "file:C:/Users/Benyamin/client-sdk-unity",
       "depth": 0,
-      "source": "registry",
-      "dependencies": {},
-      "url": "https://package.openupm.com"
+      "source": "local",
+      "dependencies": {}
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
