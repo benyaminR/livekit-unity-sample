@@ -161,7 +161,7 @@ public class LivekitSamples : MonoBehaviour
         RectTransform trans = imgObject.AddComponent<RectTransform>();
         trans.localScale = Vector3.one;
         trans.sizeDelta = new Vector2(300, 300);
-        trans.rotation = Quaternion.AngleAxis(Mathf.Lerp(0f, 180f, 50), Vector3.forward);
+        trans.rotation = Quaternion.AngleAxis(Mathf.Lerp(0f, 180f, 1), Vector3.forward);
 
         RawImage image = imgObject.AddComponent<RawImage>();
 
@@ -264,15 +264,20 @@ public class LivekitSamples : MonoBehaviour
 
     public IEnumerator publishVideo()
     {
-        var source = new TextureVideoSource(webCamTexture);
-
+        //var source = new TextureVideoSource(webCamTexture);
+        // Publish the entire screen
+        var source = new ScreenVideoSource();
         GameObject imgObject = new GameObject("camera");
         RectTransform trans = imgObject.AddComponent<RectTransform>();
         trans.localScale = Vector3.one;
         trans.sizeDelta = new Vector2(300, 300);
         RawImage image = imgObject.AddComponent<RawImage>();
 
-        image.texture = webCamTexture;
+        source.TextureReceived += (x) =>
+        {
+            image.texture = x;
+        };
+
 
         imgObject.transform.SetParent(layoutGroup.gameObject.transform, false);
         var track = LocalVideoTrack.CreateVideoTrack("my-video-track", source, room);
@@ -340,7 +345,7 @@ public class LivekitSamples : MonoBehaviour
                 }
                 webCamTexture = new WebCamTexture(deviceName, maxl, maxl == Screen.height ? Screen.width : Screen.height, frameRate)
                 {
-                    wrapMode = TextureWrapMode.Repeat
+                    wrapMode = TextureWrapMode.Repeat,
                 };
 
                 webCamTexture.Play();
