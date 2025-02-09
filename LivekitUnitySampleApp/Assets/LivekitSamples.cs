@@ -9,6 +9,7 @@ using Application = UnityEngine.Application;
 using TMPro;
 using System;
 using UnityEngine.Networking;
+using System.Linq;
 
 
 [System.Serializable]
@@ -22,13 +23,13 @@ public class LivekitSamples : MonoBehaviour
     public string url = "ws://localhost:7880";
     public string tokenServerUrl = "https://cloud-api.livekit.io/api/sandbox/connection-details";
     public string roomName = "testRoom";
+    public int frameRate = 30;
     private string token = "";
 
     private Room room = null;
 
     private WebCamTexture webCamTexture = null;
 
-    private int frameRate = 30;
 
     Dictionary<string, GameObject> _videoObjects = new();
     Dictionary<string, GameObject> _audioObjects = new();
@@ -159,7 +160,7 @@ public class LivekitSamples : MonoBehaviour
 
         RectTransform trans = imgObject.AddComponent<RectTransform>();
         trans.localScale = Vector3.one;
-        trans.sizeDelta = new Vector2(250, 250);
+        trans.sizeDelta = new Vector2(300, 300);
         trans.rotation = Quaternion.AngleAxis(Mathf.Lerp(0f, 180f, 50), Vector3.forward);
 
         RawImage image = imgObject.AddComponent<RawImage>();
@@ -268,7 +269,7 @@ public class LivekitSamples : MonoBehaviour
         GameObject imgObject = new GameObject("camera");
         RectTransform trans = imgObject.AddComponent<RectTransform>();
         trans.localScale = Vector3.one;
-        trans.sizeDelta = new Vector2(250, 250);
+        trans.sizeDelta = new Vector2(300, 300);
         RawImage image = imgObject.AddComponent<RawImage>();
 
         image.texture = webCamTexture;
@@ -277,7 +278,7 @@ public class LivekitSamples : MonoBehaviour
         var track = LocalVideoTrack.CreateVideoTrack("my-video-track", source, room);
 
         var options = new TrackPublishOptions();
-        options.VideoCodec = VideoCodec.H264;
+        options.VideoCodec = VideoCodec.Vp8;
         var videoCoding = new VideoEncoding();
         videoCoding.MaxBitrate = 512000;
         videoCoding.MaxFramerate = frameRate;
@@ -328,8 +329,16 @@ public class LivekitSamples : MonoBehaviour
             }
             else
             {
-                string devicename = devices[0].name;
-                webCamTexture = new WebCamTexture(devicename, maxl, maxl == Screen.height ? Screen.width : Screen.height, frameRate)
+                var deviceName = string.Empty;
+                if (devices.Any(x => x.isFrontFacing))
+                {
+                    deviceName = devices.First(x => x.isFrontFacing).name;
+                }
+                else
+                {
+                    deviceName = devices[0].name;
+                }
+                webCamTexture = new WebCamTexture(deviceName, maxl, maxl == Screen.height ? Screen.width : Screen.height, frameRate)
                 {
                     wrapMode = TextureWrapMode.Repeat
                 };
